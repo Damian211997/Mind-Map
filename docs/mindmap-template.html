@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mindmap Visualizer - Template</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            padding: 20px;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease-out;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .control-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .mindmap-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 100px);
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        .mindmap-container:active {
+            cursor: grabbing;
+        }
+
+        .root-node {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 25px 35px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            animation: fadeInUp 1s ease-out;
+            min-width: 300px;
+            cursor: move;
+            user-select: none;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .root-node:hover {
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .root-node.dragging {
+            opacity: 0.8;
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        .branch {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeInScale 1.2s ease-out;
+            max-width: 280px;
+            cursor: move;
+            user-select: none;
+            z-index: 5;
+        }
+
+        .branch.dragging {
+            z-index: 100;
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .main-node {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 18px 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            cursor: move;
+            transition: all 0.3s ease;
+            position: relative;
+            min-width: 200px;
+            max-width: 250px;
+            user-select: none;
+        }
+
+        .main-node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+
+        .main-node.dragging {
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+
+        .sub-nodes {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .sub-node {
+            background: white;
+            color: #2c3e50;
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            font-size: 13px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            max-width: 220px;
+            border-left: 4px solid #3498db;
+            position: relative;
+            user-select: none;
+        }
+
+        .sub-node:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            background: #f8f9fa;
+        }
+
+        .sub-node.dragging {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+
+        .detail-nodes {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+            padding-left: 15px;
+            border-left: 2px solid #e9ecef;
+            width: 100%;
+        }
+
+        .detail-node {
+            background: #f8f9fa;
+            color: #6c757d;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            text-align: left;
+            border-left: 3px solid #6c757d;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .detail-node:hover {
+            background: #e9ecef;
+            transform: translateX(3px);
+        }
+
+        .detail-node.dragging {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+
+        .sub-node.expanded .detail-nodes {
+            display: flex;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        .sub-node.expanded {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+
+        .connection-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line {
+            position: absolute;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            height: 3px;
+            border-radius: 2px;
+            transform-origin: left center;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-size: 12px;
+            color: #2c3e50;
+            z-index: 1000;
+        }
+
+        .legend h3 {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-color.root { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); }
+        .legend-color.main { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); }
+        .legend-color.sub { background: white; border: 2px solid #3498db; }
+        .legend-color.detail { background: #f8f9fa; border: 2px solid #6c757d; }
+
+        .drag-instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #2c3e50;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .drag-instructions strong {
+            color: #3498db;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .root-node {
+                font-size: 16px;
+                padding: 15px 20px;
+                min-width: 250px;
+            }
+            
+            .main-node {
+                font-size: 14px;
+                padding: 12px 15px;
+                min-width: 180px;
+            }
+            
+            .sub-node {
+                font-size: 11px;
+                padding: 8px 12px;
+                max-width: 180px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .controls {
+                position: static;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+            
+            .legend {
+                position: static;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Mindmap Visualizer</h1>
+            <p>Template Interactivo</p>
+        </div>
+
+        <div class="drag-instructions">
+            <strong>💡 Arrastra</strong> las ramas completas para reorganizarlas
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" onclick="expandAll()">Expandir Todo</button>
+            <button class="control-btn" onclick="collapseAll()">Colapsar Todo</button>
+            <button class="control-btn" onclick="resetPositions()">Resetear Posiciones</button>
+            <button class="control-btn" onclick="resetView()">Resetear Vista</button>
+        </div>
+
+        <div class="mindmap-container" id="mindmapContainer">
+            <div class="root-node" id="rootNode">
+                Título Principal<br>
+                Subtítulo del Proyecto
+            </div>
+
+            <div class="connection-lines" id="connectionLines"></div>
+
+            <!-- Rama 1: Ejemplo -->
+            <div class="branch" id="branch1" style="top: 10%; left: 10%;">
+                <div class="main-node">📋 Rama Principal 1</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 1.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 1.1.1</div>
+                            <div class="detail-node">Detalle 1.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 1.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 1.2.1</div>
+                            <div class="detail-node">Detalle 1.2.2</div>
+                            <div class="detail-node">Detalle 1.2.3</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 2: Ejemplo -->
+            <div class="branch" id="branch2" style="top: 10%; right: 10%;">
+                <div class="main-node">🔍 Rama Principal 2</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 2.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 2.1.1</div>
+                            <div class="detail-node">Detalle 2.1.2</div>
+                            <div class="detail-node">Detalle 2.1.3</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 2.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 2.2.1</div>
+                            <div class="detail-node">Detalle 2.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 3: Ejemplo -->
+            <div class="branch" id="branch3" style="top: 30%; left: 5%;">
+                <div class="main-node">🏗️ Rama Principal 3</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 3.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 3.1.1</div>
+                            <div class="detail-node">Detalle 3.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 3.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 3.2.1</div>
+                            <div class="detail-node">Detalle 3.2.2</div>
+                            <div class="detail-node">Detalle 3.2.3</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 4: Ejemplo -->
+            <div class="branch" id="branch4" style="top: 30%; right: 5%;">
+                <div class="main-node">⚙️ Rama Principal 4</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 4.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 4.1.1</div>
+                            <div class="detail-node">Detalle 4.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 4.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 4.2.1</div>
+                            <div class="detail-node">Detalle 4.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 5: Ejemplo -->
+            <div class="branch" id="branch5" style="top: 50%; left: 10%;">
+                <div class="main-node">📅 Rama Principal 5</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 5.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 5.1.1</div>
+                            <div class="detail-node">Detalle 5.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 5.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 5.2.1</div>
+                            <div class="detail-node">Detalle 5.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 6: Ejemplo -->
+            <div class="branch" id="branch6" style="top: 50%; right: 10%;">
+                <div class="main-node">⚠️ Rama Principal 6</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 6.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 6.1.1</div>
+                            <div class="detail-node">Detalle 6.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 6.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 6.2.1</div>
+                            <div class="detail-node">Detalle 6.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 7: Ejemplo -->
+            <div class="branch" id="branch7" style="top: 70%; left: 5%;">
+                <div class="main-node">📊 Rama Principal 7</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 7.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 7.1.1</div>
+                            <div class="detail-node">Detalle 7.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 7.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 7.2.1</div>
+                            <div class="detail-node">Detalle 7.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 8: Ejemplo -->
+            <div class="branch" id="branch8" style="top: 70%; right: 5%;">
+                <div class="main-node">💰 Rama Principal 8</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 8.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 8.1.1</div>
+                            <div class="detail-node">Detalle 8.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 8.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 8.2.1</div>
+                            <div class="detail-node">Detalle 8.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 9: Ejemplo -->
+            <div class="branch" id="branch9" style="bottom: 10%; left: 20%;">
+                <div class="main-node">🔧 Rama Principal 9</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 9.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 9.1.1</div>
+                            <div class="detail-node">Detalle 9.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 9.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 9.2.1</div>
+                            <div class="detail-node">Detalle 9.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rama 10: Ejemplo -->
+            <div class="branch" id="branch10" style="bottom: 10%; right: 20%;">
+                <div class="main-node">⚖️ Rama Principal 10</div>
+                <div class="sub-nodes">
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 10.1
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 10.1.1</div>
+                            <div class="detail-node">Detalle 10.1.2</div>
+                        </div>
+                    </div>
+                    <div class="sub-node" onclick="toggleDetails(this)">
+                        Subcategoría 10.2
+                        <div class="detail-nodes">
+                            <div class="detail-node">Detalle 10.2.1</div>
+                            <div class="detail-node">Detalle 10.2.2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>Leyenda</h3>
+            <div class="legend-item">
+                <div class="legend-color root"></div>
+                <span>Nodo Principal</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color main"></div>
+                <span>Ramas Principales</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color sub"></div>
+                <span>Subcategorías</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color detail"></div>
+                <span>Detalles</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables para el drag and drop
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+        let draggedElement = null;
+
+        // Posiciones iniciales para reset
+        const initialPositions = {
+            rootNode: { top: '50%', left: '50%' },
+            branch1: { top: '10%', left: '10%' },
+            branch2: { top: '10%', right: '10%' },
+            branch3: { top: '30%', left: '5%' },
+            branch4: { top: '30%', right: '5%' },
+            branch5: { top: '50%', left: '10%' },
+            branch6: { top: '50%', right: '10%' },
+            branch7: { top: '70%', left: '5%' },
+            branch8: { top: '70%', right: '5%' },
+            branch9: { bottom: '10%', left: '20%' },
+            branch10: { bottom: '10%', right: '20%' }
+        };
+
+        // Función para manejar el inicio del drag
+        function dragStart(e) {
+            // Solo permitir arrastrar ramas completas o el nodo central
+            if (e.target.classList.contains('branch') || e.target.classList.contains('root-node') || 
+                e.target.closest('.branch') || e.target.closest('.root-node')) {
+                
+                // Encontrar el elemento arrastrable más cercano (rama o nodo central)
+                if (e.target.classList.contains('branch')) {
+                    draggedElement = e.target;
+                } else if (e.target.classList.contains('root-node')) {
+                    draggedElement = e.target;
+                } else if (e.target.closest('.branch')) {
+                    draggedElement = e.target.closest('.branch');
+                } else if (e.target.closest('.root-node')) {
+                    draggedElement = e.target.closest('.root-node');
+                }
+                
+                if (draggedElement) {
+                    isDragging = true;
+                    draggedElement.classList.add('dragging');
+                    
+                    const rect = draggedElement.getBoundingClientRect();
+                    initialX = e.clientX - rect.left;
+                    initialY = e.clientY - rect.top;
+                }
+            }
+        }
+
+        // Función para manejar el drag
+        function drag(e) {
+            if (isDragging && draggedElement) {
+                e.preventDefault();
+                
+                const container = document.getElementById('mindmapContainer');
+                const containerRect = container.getBoundingClientRect();
+                
+                // Calcular nueva posición relativa al contenedor
+                const newX = e.clientX - containerRect.left - initialX;
+                const newY = e.clientY - containerRect.top - initialY;
+                
+                // Aplicar límites para mantener el elemento dentro del contenedor
+                const maxX = containerRect.width - draggedElement.offsetWidth;
+                const maxY = containerRect.height - draggedElement.offsetHeight;
+                
+                const boundedX = Math.max(0, Math.min(newX, maxX));
+                const boundedY = Math.max(0, Math.min(newY, maxY));
+                
+                // Para el nodo central, mantener la transformación especial
+                if (draggedElement.classList.contains('root-node')) {
+                    draggedElement.style.left = boundedX + 'px';
+                    draggedElement.style.top = boundedY + 'px';
+                    draggedElement.style.transform = 'none';
+                } else {
+                    // Para las ramas, usar posición absoluta
+                    draggedElement.style.left = boundedX + 'px';
+                    draggedElement.style.top = boundedY + 'px';
+                    draggedElement.style.right = 'auto';
+                    draggedElement.style.bottom = 'auto';
+                }
+            }
+        }
+
+        // Función para manejar el fin del drag
+        function dragEnd(e) {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                isDragging = false;
+                draggedElement = null;
+            }
+        }
+
+        // Función para establecer la posición
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+        }
+
+        // Agregar event listeners para drag and drop
+        document.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        // Prevenir el comportamiento por defecto del drag
+        document.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+        });
+
+        // Funciones existentes
+        function toggleDetails(element) {
+            element.classList.toggle('expanded');
+        }
+
+        function expandAll() {
+            const subNodes = document.querySelectorAll('.sub-node');
+            subNodes.forEach(node => {
+                node.classList.add('expanded');
+            });
+        }
+
+        function collapseAll() {
+            const subNodes = document.querySelectorAll('.sub-node');
+            subNodes.forEach(node => {
+                node.classList.remove('expanded');
+            });
+        }
+
+        function resetPositions() {
+            Object.keys(initialPositions).forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    // Limpiar estilos de posición aplicados durante el drag
+                    element.style.left = '';
+                    element.style.top = '';
+                    element.style.right = '';
+                    element.style.bottom = '';
+                    element.style.transform = '';
+                    
+                    // Restaurar posiciones iniciales
+                    Object.keys(initialPositions[id]).forEach(property => {
+                        element.style[property] = initialPositions[id][property];
+                    });
+                    
+                    // Para el nodo central, restaurar la transformación especial
+                    if (id === 'rootNode') {
+                        element.style.transform = 'translate(-50%, -50%)';
+                    }
+                }
+            });
+        }
+
+        function resetView() {
+            collapseAll();
+            resetPositions();
+            window.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Auto-expand on hover for better UX
+        document.querySelectorAll('.sub-node').forEach(node => {
+            node.addEventListener('mouseenter', function() {
+                if (!this.classList.contains('expanded')) {
+                    setTimeout(() => {
+                        this.classList.add('expanded');
+                    }, 500);
+                }
+            });
+        });
+
+        // Add some interactivity
+        document.querySelectorAll('.main-node').forEach(node => {
+            node.addEventListener('click', function() {
+                const subNodes = this.parentElement.querySelectorAll('.sub-node');
+                const allExpanded = Array.from(subNodes).every(n => n.classList.contains('expanded'));
+                
+                if (allExpanded) {
+                    subNodes.forEach(n => n.classList.remove('expanded'));
+                } else {
+                    subNodes.forEach(n => n.classList.add('expanded'));
+                }
+            });
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case 'Escape':
+                    collapseAll();
+                    break;
+                case 'Enter':
+                    expandAll();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    resetView();
+                    break;
+            }
+        });
+
+        // Add smooth scrolling for better navigation
+        document.querySelectorAll('.sub-node').forEach(node => {
+            node.addEventListener('click', function() {
+                this.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
